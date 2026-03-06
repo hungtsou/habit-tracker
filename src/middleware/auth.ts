@@ -3,14 +3,6 @@ import jwt from 'jsonwebtoken';
 import { AppError } from './error';
 import { AuthPayload } from '../types';
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthPayload;
-    }
-  }
-}
-
 export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
