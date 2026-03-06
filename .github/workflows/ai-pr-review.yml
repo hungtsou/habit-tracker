@@ -19,6 +19,7 @@ jobs:
           OPENAI_API_ENDPOINT: https://api.openai.com/v1
           MODEL: gpt-3.5-turbo
           LANGUAGE: English
+          PROMPT: "Review this diff for: 1) bugs and logic errors, 2) security issues, 3) alignment with our project conventions (Express, Zod, snake_case in DB)."
           MAX_PATCH_LENGTH: 10000
           IGNORE_PATTERNS: /node_modules/**/*,*.lock,*.min.js,*.min.css,package-lock.json,yarn.lock,pnpm-lock.yaml
           INCLUDE_PATTERNS: "*.ts,*.js,*.json,*.mdc"
