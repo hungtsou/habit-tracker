@@ -1,0 +1,44 @@
+---
+description: PostgreSQL database query and migration patterns
+globs: "src/db/**/*.ts"
+alwaysApply: false
+---
+
+# Database Patterns (PostgreSQL)
+
+## Connection
+
+- Use a single connection pool (`pg.Pool`) exported from `src/db/pool.ts`
+- Never create ad-hoc connections — always use the shared pool
+
+## Queries
+
+- Use parameterized queries to prevent SQL injection — never interpolate values
+- One query function per operation, exported from domain-specific files (e.g., `habit.queries.ts`)
+
+```typescript
+// ❌ BAD: string interpolation
+const result = await pool.query(`SELECT * FROM habits WHERE user_id = '${userId}'`);
+
+// ✅ GOOD: parameterized
+export const getHabitsByUser = async (userId: string): Promise<Habit[]> => {
+  const { rows } = await pool.query<Habit>(
+    'SELECT id, name, is_default, created_at FROM habits WHERE user_id = $1',
+    [userId]
+  );
+  return rows;
+};
+```
+
+## Migrations
+
+- Store migration SQL files in `src/db/migrations/` with numeric prefixes: `001_create_users.sql`
+- Each migration file has an `-- UP` and `-- DOWN` section
+- Never modify an existing migration — create a new one
+
+## Conventions
+
+- Use `snake_case` for table and column names
+- All tables have `id` (UUID, PK) and `created_at` (timestamp, default `now()`)
+- Use `RETURNING *` or `RETURNING <columns>` for INSERT/UPDATE to avoid extra queries
+- Wrap multi-table operations in transactions

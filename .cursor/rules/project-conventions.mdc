@@ -1,0 +1,38 @@
+---
+description: Project architecture and structure conventions for the Habit Tracker API
+alwaysApply: true
+---
+
+# Project Conventions
+
+## Architecture
+
+Backend-only REST API: `Client → Express API → PostgreSQL`
+
+## Layer Structure
+
+```
+src/
+  routes/         # Route definitions and endpoint mapping
+  controllers/    # Request handling, response formatting
+  middleware/     # Auth (JWT), validation (Zod), error handling
+  db/             # Connection pool, queries, migrations
+  utils/          # Shared helpers, constants, type definitions
+  types/          # Shared TypeScript interfaces and types
+  app.ts          # Express app setup
+  server.ts       # Entry point, starts listening
+tests/              # All tests — mirrors src/ structure
+  unit/             # Unit tests (mocked dependencies)
+  integration/      # Integration tests (real test db)
+  helpers/          # Test factories, utilities, mocks
+  setup.ts          # Global test setup
+```
+
+## Conventions
+
+- Each layer only imports from the layer below it (routes → controllers → db)
+- Controllers never access `req`/`res` directly in business logic — delegate to service helpers or db layer
+- All responses follow consistent JSON format: `{ data }` on success, `{ error, statusCode }` on failure
+- Environment config via `dotenv` and `custom-env` — never hardcode secrets
+- Use UUID for all primary keys
+- Use snake_case for database columns, camelCase for TypeScript variables

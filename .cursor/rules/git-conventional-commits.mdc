@@ -1,0 +1,54 @@
+---
+description: Git conventional commit message format and rules
+alwaysApply: true
+---
+
+# Git Conventional Commits
+
+## Format
+
+```
+<type>(<scope>): <short description>
+
+[optional body]
+
+[optional footer]
+```
+
+## Types
+
+| Type       | When to use                                |
+| ---------- | ------------------------------------------ |
+| `feat`     | New feature or capability                  |
+| `fix`      | Bug fix                                    |
+| `docs`     | Documentation only                         |
+| `style`    | Formatting, no code change                 |
+| `refactor` | Code restructuring, no behavior change     |
+| `test`     | Adding or updating tests                   |
+| `chore`    | Build, tooling, dependency updates         |
+| `ci`       | CI/CD configuration changes                |
+| `perf`     | Performance improvement                    |
+
+## Scopes
+
+Use the primary area affected: `auth`, `habits`, `tracking`, `db`, `middleware`, `config`, `deps`
+
+## Rules
+
+- Subject line: imperative mood, lowercase, no period, max 72 chars
+- Body: wrap at 80 chars, explain **why** not **what**
+- Breaking changes: add `BREAKING CHANGE:` in footer or `!` after type
+
+## Examples
+
+```
+feat(auth): add JWT-based login endpoint
+
+fix(db): prevent duplicate habit log entries per day
+
+chore(deps): upgrade zod to v3.23
+
+refactor(habits): extract query functions from controller
+
+docs: add API route documentation
+```

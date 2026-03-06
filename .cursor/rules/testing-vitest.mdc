@@ -1,0 +1,56 @@
+---
+description: Testing best practices using Vitest
+globs: "tests/**/*.ts"
+alwaysApply: false
+---
+
+# Testing with Vitest
+
+## Structure
+
+Tests live in `tests/` at the project root, mirroring `src/` structure:
+
+```
+tests/
+  unit/
+    controllers/    # Controller unit tests
+    db/             # Query function tests
+    middleware/     # Middleware tests
+    utils/          # Utility tests
+  integration/
+    routes/         # Full route integration tests
+  helpers/          # Shared test utilities, factories, mocks
+  setup.ts          # Global test setup
+```
+
+## Naming
+
+- Test files: `<module>.test.ts` (e.g., `habit.controller.test.ts`)
+- Use `describe` blocks matching the module/function name
+- Test names: `it('should <expected behavior> when <condition>')` — be specific
+
+## Patterns
+
+```typescript
+// ✅ GOOD: focused, isolated, descriptive
+describe('createHabit', () => {
+  it('should return 201 and the created habit when input is valid', async () => {
+    const result = await createHabit(mockUserId, { name: 'Exercise' });
+    expect(result).toMatchObject({ name: 'Exercise', user_id: mockUserId });
+  });
+
+  it('should throw AppError when user does not exist', async () => {
+    await expect(createHabit('invalid-id', { name: 'Read' }))
+      .rejects.toThrow(AppError);
+  });
+});
+```
+
+## Rules
+
+- One assertion concept per test — multiple `expect` calls are fine if testing one behavior
+- Use `vi.mock()` for external dependencies (db pool, bcrypt, jwt)
+- Use factories in `tests/helpers/` to build test data — avoid hardcoded objects in every test
+- Clean up state in `beforeEach` / `afterEach`, not between individual assertions
+- Integration tests use a real test database — never mock the db layer in integration tests
+- Never test implementation details — test inputs and outputs, not internal method calls

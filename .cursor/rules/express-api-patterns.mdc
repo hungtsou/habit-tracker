@@ -1,0 +1,49 @@
+---
+description: Express route, controller, and middleware patterns
+globs: "src/**/*.ts"
+alwaysApply: false
+---
+
+# Express API Patterns
+
+## Route Files
+
+- One router per resource (e.g., `auth.routes.ts`, `habits.routes.ts`)
+- Routes only define method + path + middleware chain + controller handler
+- Prefix all routes with `/api`
+
+```typescript
+// ✅ GOOD
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { createHabitSchema } from '../schemas/habit.schema';
+import { createHabit, getHabits } from '../controllers/habit.controller';
+
+const router = Router();
+
+router.post('/', authenticate, validate(createHabitSchema), createHabit);
+router.get('/', authenticate, getHabits);
+
+export { router as habitRouter };
+```
+
+## Controllers
+
+- Keep controllers thin — extract logic into the db/service layer
+- Always wrap async handlers to forward errors to Express error middleware
+- Return consistent status codes: 200 (ok), 201 (created), 204 (deleted), 400 (validation), 401 (auth), 404 (not found), 500 (server)
+
+```typescript
+// ✅ GOOD: thin controller with async wrapper
+export const createHabit = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const habit = await insertHabit(req.user.id, req.body);
+  res.status(201).json({ data: habit });
+});
+```
+
+## Middleware
+
+- `authenticate` — verify JWT, attach `user` to `req`
+- `validate(schema)` — run Zod schema on `req.body`, return 400 on failure
+- Global error handler as the last middleware — catches all thrown/forwarded errors
