@@ -1,11 +1,7 @@
-import customEnv from 'custom-env';
-
-customEnv.env(process.env.NODE_ENV ?? 'development');
-
+import './config/env';   // load and validate env before anything else
 import app from './app';
+import { env } from './config/env';
 
-const PORT = process.env.PORT ?? '3000';
-
-app.listen(PORT, () => {
-  console.log(`[server] Listening on http://localhost:${PORT}`);
+app.listen(env.PORT, () => {
+  console.log(`[server] Listening on http://localhost:${env.PORT}`);
 });
