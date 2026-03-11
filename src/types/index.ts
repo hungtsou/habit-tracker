@@ -11,3 +11,12 @@ export interface ApiError {
 export interface AuthPayload {
   userId: string;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  password: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
