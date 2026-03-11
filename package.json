@@ -11,7 +11,7 @@
     "test:integration": "jest tests/integration",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "migrate": "ts-node-dev src/db/migrate.ts"
+    "migrate": "ts-node-dev --files src/db/migrate.ts"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
