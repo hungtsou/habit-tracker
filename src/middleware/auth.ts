@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from './error';
 import { AuthPayload } from '../types';
+import { env } from '../config/env';
 
 export const authenticate = (req: Request, _res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
@@ -12,7 +13,7 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction): 
 
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as AuthPayload;
+    const payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
     req.user = payload;
     next();
   } catch {
