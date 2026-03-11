@@ -1,7 +1,8 @@
-import customEnv from 'custom-env';
+import dotenv from 'dotenv';
 import { z } from 'zod';
 
-customEnv.env(process.env.NODE_ENV ?? 'development');
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+dotenv.config({ path: envFile });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -22,5 +23,5 @@ if (!parsed.success) {
 export const env = parsed.data;
 
 export const isProd = (): boolean => env.NODE_ENV === 'production';
-export const isDev  = (): boolean => env.NODE_ENV === 'development';
+export const isDev = (): boolean => env.NODE_ENV === 'development';
 export const isTest = (): boolean => env.NODE_ENV === 'test';

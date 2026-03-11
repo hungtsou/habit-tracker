@@ -31,7 +31,12 @@ export async function register(req: Request, res: Response, next: NextFunction):
       data: { id: user.id, email: user.email, name: user.name, token },
     });
   } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'code' in err &&
+      (err as { code: string }).code === '23505'
+    ) {
       next(new AppError('Email already registered', 409));
       return;
     }

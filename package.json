@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "custom-env": "^2.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",

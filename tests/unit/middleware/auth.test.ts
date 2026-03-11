@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { env } from '../../../src/config/env';
 import { authenticate } from '../../../src/middleware/auth';
 
 const mockReq = (authHeader?: string) =>
@@ -23,7 +24,7 @@ describe('authenticate middleware', () => {
   });
 
   it('attaches decoded payload to req.user and calls next() on valid token', () => {
-    const token = jwt.sign({ userId: 'user-1' }, 'test-secret-do-not-use-in-prod');
+    const token = jwt.sign({ userId: 'user-1' }, env.JWT_SECRET);
     const req = mockReq(`Bearer ${token}`);
     authenticate(req, mockRes(), next);
     expect(next).toHaveBeenCalledWith();
