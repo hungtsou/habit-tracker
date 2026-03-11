@@ -1,3 +1,5 @@
+jest.mock('dotenv', () => ({ config: jest.fn() }));
+
 describe('env config', () => {
   const ORIGINAL_ENV = process.env;
 
@@ -91,6 +93,16 @@ describe('env config', () => {
     await expect(import('../../../src/config/env')).rejects.toThrow('process.exit called');
 
     mockExit.mockRestore();
+  });
+
+  it('defaults JWT_EXPIRES_IN to "24h"', async () => {
+    process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
+    process.env.JWT_SECRET   = 'a-sufficiently-long-secret-key';
+    delete process.env.JWT_EXPIRES_IN;
+
+    const { env } = await import('../../../src/config/env');
+
+    expect(env.JWT_EXPIRES_IN).toBe('24h');
   });
 
   it('calls process.exit(1) when JWT_SECRET is shorter than 16 characters', async () => {
