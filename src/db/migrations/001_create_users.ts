@@ -11,7 +11,6 @@ export async function up(pool: Pool): Promise<void> {
       updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
     )
   `);
-  await pool.query('CREATE UNIQUE INDEX idx_users_email ON users (email)');
 }
 
 export async function down(pool: Pool): Promise<void> {
