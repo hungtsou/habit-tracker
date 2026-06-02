@@ -1,4 +1,4 @@
-import './config/env';   // load and validate env before anything else
+import './config/env'; // load and validate env before anything else
 import app from './app';
 import { env } from './config/env';
 
