@@ -5,3 +5,5 @@ dist/
 !.env.example
 *.js.map
 .claude/settings.local.json
+.claude/worktrees/
+.claude/plans/

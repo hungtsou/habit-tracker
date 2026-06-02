@@ -11,9 +11,9 @@ const schema = z.object({
 });
 
 describe('validate middleware', () => {
-  const next = jest.fn() as unknown as NextFunction;
+  const next = vi.fn() as unknown as NextFunction;
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks());
 
   it('calls next() with no args when body is valid', () => {
     validate(schema)(mockReq({ email: 'a@b.com', password: '12345678' }), mockRes(), next);
@@ -27,7 +27,7 @@ describe('validate middleware', () => {
 
   it('passes the first Zod error message to AppError', () => {
     validate(schema)(mockReq({}), mockRes(), next);
-    const error = (next as jest.Mock).mock.calls[0][0] as Error & { statusCode: number };
+    const error = vi.mocked(next).mock.calls[0][0] as Error & { statusCode: number };
     expect(error.message).toBeTruthy();
     expect(error.statusCode).toBe(400);
   });

@@ -3,14 +3,14 @@ import { errorHandler, AppError } from '../../../src/middleware/error';
 
 const mockRes = () => {
   const res = {} as Response;
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
+  res.status = vi.fn().mockReturnValue(res);
+  res.json = vi.fn().mockReturnValue(res);
   return res;
 };
 
 describe('errorHandler', () => {
   const req = {} as Request;
-  const next = jest.fn() as NextFunction;
+  const next = vi.fn() as NextFunction;
 
   it('handles AppError with its own statusCode and message', () => {
     const res = mockRes();

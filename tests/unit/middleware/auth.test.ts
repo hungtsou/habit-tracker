@@ -8,9 +8,9 @@ const mockReq = (authHeader?: string) =>
 const mockRes = () => ({}) as Response;
 
 describe('authenticate middleware', () => {
-  const next = jest.fn() as unknown as NextFunction;
+  const next = vi.fn() as unknown as NextFunction;
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => vi.clearAllMocks());
 
   it('calls next with AppError 401 if no Authorization header', () => {
     authenticate(mockReq(), mockRes(), next);

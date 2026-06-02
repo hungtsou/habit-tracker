@@ -3,7 +3,7 @@ describe('env config', () => {
 
   beforeEach(() => {
     process.env = { ...ORIGINAL_ENV };
-    jest.resetModules();
+    vi.resetModules();
   });
 
   afterAll(() => {
@@ -81,7 +81,7 @@ describe('env config', () => {
   });
 
   it('calls process.exit(1) when a required variable is missing', async () => {
-    const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit called');
     });
 
@@ -94,7 +94,7 @@ describe('env config', () => {
   });
 
   it('calls process.exit(1) when JWT_SECRET is shorter than 16 characters', async () => {
-    const mockExit = jest.spyOn(process, 'exit').mockImplementation(() => {
+    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit called');
     });
 

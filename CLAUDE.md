@@ -12,7 +12,7 @@ npm start                # Run compiled app
 npm test                 # All tests
 npm run test:unit        # Unit tests only (tests/unit/)
 npm run test:integration # Integration tests only (tests/integration/)
-npx jest tests/unit/path/to/file.test.ts  # Run a single test file
+npx vitest run tests/unit/path/to/file.test.ts  # Run a single test file
 
 npm run lint             # ESLint
 npm run format           # Prettier
@@ -67,7 +67,7 @@ Use `.transform()` to sanitize inputs (trim whitespace, lowercase emails). Inclu
 
 ## Testing
 
-Target test framework is **Vitest** (`vi.mock()`, `vi.fn()`, `vi.mocked()`) — the Jest→Vitest migration is a separate task; `npm test` still runs Jest today.
+Target test framework is **Vitest** (`vi.mock()`, `vi.fn()`, `vi.mocked()`). Vitest globals are enabled — no framework imports needed in test files.
 
 **Unit tests** (`tests/unit/`) — mock all external dependencies (db pool, bcrypt, jwt) with `vi.mock()`.
 
