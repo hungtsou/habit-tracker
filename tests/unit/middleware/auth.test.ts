@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { authenticate } from '../../../src/middleware/auth';
 
-const mockReq = (authHeader?: string) =>
-  ({ headers: { authorization: authHeader } }) as Request;
+const mockReq = (authHeader?: string) => ({ headers: { authorization: authHeader } }) as Request;
 
 const mockRes = () => ({}) as Response;
 
