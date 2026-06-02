@@ -10,7 +10,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "db:dev": "docker start hb-tracker 2>/dev/null || docker run --name hb-tracker -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -e POSTGRES_DB=habit_tracker -p 5432:5432 -v hb-tracker-data:/var/lib/postgresql/data -d postgres:14"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
