@@ -1,8 +1,8 @@
-name: Claude PR Review (Inline)
+name: Claude PR Review (CLI)
 
-on: [] # disabled for now
-  # pull_request:
-  #   types: [opened, synchronize, reopened]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   review:
