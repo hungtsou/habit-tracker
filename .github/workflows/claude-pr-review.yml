@@ -18,9 +18,74 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Write PR diff to file
+        run: |
+          git diff origin/${{ github.base_ref }}...HEAD \
+            -- '*.ts' ':!dist/**' ':!*.lock' \
+            > /tmp/pr.diff
+          git diff origin/${{ github.base_ref }}...HEAD --name-only \
+            -- '*.ts' ':!dist/**' ':!*.lock' \
+            > /tmp/pr-files.txt
+          echo "Changed files:" && cat /tmp/pr-files.txt
+          echo "Diff lines:" && wc -l /tmp/pr.diff
+
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
-          plugins: "code-review@claude-code-plugins"
-          prompt: "/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: '--max-turns 15 --model claude-sonnet-4-6'
+          prompt: |
+            You are reviewing a pull request. Work through these steps:
+
+            1. Run: cat /tmp/pr-files.txt
+               This lists every TypeScript file changed in this PR.
+
+            2. Run: cat /tmp/pr.diff
+               Read the full diff carefully.
+
+            3. For each file listed in step 1, use the Read tool to read
+               its complete current contents from the working directory.
+
+            4. Check every changed file against these rules:
+
+               CRITICAL — flag any of these:
+               - SQL injection: a JavaScript template literal (backtick string) that
+                 interpolates a variable directly inside a pool.query() call.
+                 Example of the bug: pool.query(`SELECT * WHERE name = '${input}'`)
+                 Only $1/$2 placeholders are safe.
+               - Auth bypass: a router.get/post/put/delete() call that does NOT have
+                 `authenticate` as one of its middleware arguments. Every route that
+                 accesses user data must have authenticate.
+
+               HIGH — flag any of these:
+               - Wrong response shape: a controller calling res.json() or
+                 res.status().json() directly instead of sendSuccess() or sendError().
+               - Wrong HTTP status on resource creation: a POST controller calling
+                 sendSuccess with status 200 — it must be 201.
+
+               TEST COVERAGE — flag if:
+               - A new controller file exists but its test file only tests one function
+                 and leaves other exported functions completely uncovered.
+
+            5. Post a PR comment using:
+               gh pr comment ${{ github.event.pull_request.number }} \
+                 --repo ${{ github.repository }} \
+                 --body "<your review in the format below>"
+
+            Format the comment body exactly like this:
+
+            ## Claude PR Review
+
+            ### 🔴 Critical
+            _Security issues that must be fixed before merge_
+
+            ### 🟠 High
+            _Bugs and standard violations_
+
+            ### 🟢 Test Coverage
+            _Missing tests_
+
+            For each finding write one line:
+            `path/to/file.ts` line N — what the problem is — how to fix it.
+
+            If a section has no findings write _None_.
