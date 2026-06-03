@@ -21,9 +21,11 @@ jobs:
       - name: Generate diff
         run: |
           git diff origin/${{ github.base_ref }}...HEAD \
-            -- '*.ts' ':!dist/**' ':!*.lock' > /tmp/pr.diff
+            -- '*.ts' ':!dist/**' ':!*.lock' > pr.diff
           git diff origin/${{ github.base_ref }}...HEAD --name-only \
-            -- '*.ts' ':!dist/**' ':!*.lock' > /tmp/pr-files.txt
+            -- '*.ts' ':!dist/**' ':!*.lock' > pr-files.txt
+          echo "=== Changed files ===" && cat pr-files.txt
+          echo "=== Diff line count ===" && wc -l pr.diff
 
       - name: Claude review
         uses: anthropics/claude-code-action@v1
@@ -31,34 +33,49 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: '--max-turns 10 --model claude-sonnet-4-6'
           prompt: |
-            Read /tmp/pr-files.txt, then read /tmp/pr.diff.
-            For each .ts file listed, also read its full contents using the Read tool.
+            You are reviewing a pull request. Do the following steps in order:
 
-            Check for:
-            - SQL injection: any ${variable} interpolated inside a pool.query() call
-            - Auth bypass: router.delete/get/post/put() with no `authenticate` argument
-            - Wrong response shape: res.json() instead of sendSuccess()
-            - Wrong status code: sendSuccess called with 200 on a POST create endpoint
-            - Test coverage: controller exports with zero test coverage
+            1. Read the file `pr-files.txt` — this lists every changed TypeScript file.
+            2. Read the file `pr.diff` — this is the full diff.
+            3. For each file in pr-files.txt, use the Read tool to read its full contents.
+            4. Review for these issues:
+               - SQL injection: a ${variable} inside a template literal passed to pool.query()
+               - Auth bypass: a router.get/post/put/delete() call with no `authenticate` middleware
+               - Wrong response shape: res.json() used instead of sendSuccess()
+               - Wrong HTTP status: sendSuccess called with 200 on a POST that creates a resource
+               - Test coverage: exported controller functions with no tests at all
+            5. Write your complete review to the file `pr-review.md` using the Write tool.
+               Use this exact format:
 
-            Write your findings to /tmp/review.md in this format:
+               ## Claude PR Review
 
-            ## Claude PR Review
+               ### 🔴 Critical
+               _Security issues_
 
-            ### 🔴 Critical
-            ### 🟠 High
-            ### 🟢 Test Coverage
+               ### 🟠 High
+               _Bugs and standard violations_
 
-            One line per finding: `file.ts` line N — problem — fix suggestion.
-            Write _None_ in empty sections.
+               ### 🟢 Test Coverage
+               _Missing tests_
 
-      - name: Post review as PR comment
+               One line per finding: `file.ts` line N — problem — fix.
+               Write _None_ in sections with no findings.
+
+      - name: Post review comment
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -s /tmp/review.md ]; then
+          echo "=== Checking for review file ==="
+          ls -la pr-review.md 2>/dev/null || echo "pr-review.md not found"
+          if [ -s pr-review.md ]; then
+            echo "=== Posting comment ==="
             gh pr comment ${{ github.event.pull_request.number }} \
               --repo ${{ github.repository }} \
-              --body-file /tmp/review.md
+              --body-file pr-review.md
+          else
+            echo "=== No review file, posting fallback ==="
+            gh pr comment ${{ github.event.pull_request.number }} \
+              --repo ${{ github.repository }} \
+              --body "⚠️ Claude review ran but produced no output. Check the workflow logs."
           fi
