@@ -1,8 +1,8 @@
 name: Claude PR Review
 
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+on: [] # disabled for now
+  # pull_request:
+  #   types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
