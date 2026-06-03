@@ -14,51 +14,9 @@ jobs:
   review:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Generate PR diff for Claude
-        run: |
-          git diff origin/${{ github.base_ref }}...HEAD > /tmp/pr.diff
-          git diff origin/${{ github.base_ref }}...HEAD --name-only > /tmp/pr-files.txt
-          echo "=== Changed files ===" && cat /tmp/pr-files.txt
-          echo "=== Diff size ===" && wc -l /tmp/pr.diff
-
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: '--max-turns 10 --model claude-sonnet-4-6'
-          prompt: |
-            You are reviewing a pull request. The diff and file list have already been prepared for you.
-
-            **Step 1** — Read /tmp/pr-files.txt to get the list of changed files.
-
-            **Step 2** — Read /tmp/pr.diff to see every changed line.
-
-            **Step 3** — For each `.ts` source file listed in /tmp/pr-files.txt (skip `node_modules/`, `dist/`, `*.lock`), use the Read tool to read its full contents from the working directory. The diff shows what changed; the full file shows context around those changes.
-
-            **Step 4** — Review the code against these rules:
-
-            - **SQL injection**: any variable interpolated into a template literal or concatenated string inside `pool.query(...)` is a critical vulnerability — only `$1, $2` placeholders are safe.
-            - **Auth bypass**: every route that touches user data must have `authenticate` as the first middleware. A route registered as `router.get('/', controller)` with no `authenticate` call before it is an auth bypass.
-            - **Response shape**: all success responses must go through `sendSuccess(res, data, statusCode)`. Calling `res.json(...)` directly violates the project standard.
-            - **HTTP status codes**: a POST endpoint that creates a new resource must return `201`. Returning `200` from a create endpoint is a logic bug.
-            - **Test coverage**: check if every exported function in changed controller files has at least one test. If only the happy path of one function is tested and others have no tests at all, flag it.
-
-            **Step 5** — Post your findings using this exact format:
-
-            ## 🔴 Critical
-            _Issues that must be fixed before merge_
-
-            ## 🟠 High
-            _Likely bugs or clear standard violations_
-
-            ## 🟡 Medium
-            _Standard violations that reduce maintainability_
-
-            ## 🟢 Low
-            _Minor style or nitpicks_
-
-            For each finding: `file.ts` line N — description — suggested fix.
-            Write `_None_` in any section with no findings.
+          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
+          plugins: "code-review@claude-code-plugins"
+          prompt: "/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
