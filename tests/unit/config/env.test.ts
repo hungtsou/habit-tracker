@@ -11,9 +11,9 @@ describe('env config', () => {
   });
 
   it('exports a valid env object when all required variables are set', async () => {
-    process.env.NODE_ENV    = 'development';
+    process.env.NODE_ENV = 'development';
     process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
-    process.env.JWT_SECRET   = 'a-sufficiently-long-secret-key';
+    process.env.JWT_SECRET = 'a-sufficiently-long-secret-key';
 
     const { env } = await import('../../../src/config/env');
 
@@ -25,8 +25,8 @@ describe('env config', () => {
 
   it('coerces PORT from string to number', async () => {
     process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
-    process.env.JWT_SECRET   = 'a-sufficiently-long-secret-key';
-    process.env.PORT         = '8080';
+    process.env.JWT_SECRET = 'a-sufficiently-long-secret-key';
+    process.env.PORT = '8080';
 
     const { env } = await import('../../../src/config/env');
 
@@ -36,7 +36,7 @@ describe('env config', () => {
 
   it('applies default PORT of 3000 when PORT is not set', async () => {
     process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
-    process.env.JWT_SECRET   = 'a-sufficiently-long-secret-key';
+    process.env.JWT_SECRET = 'a-sufficiently-long-secret-key';
     delete process.env.PORT;
 
     const { env } = await import('../../../src/config/env');
@@ -45,9 +45,9 @@ describe('env config', () => {
   });
 
   it('isProd returns true only in production', async () => {
-    process.env.NODE_ENV     = 'production';
+    process.env.NODE_ENV = 'production';
     process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
-    process.env.JWT_SECRET   = 'a-sufficiently-long-secret-key';
+    process.env.JWT_SECRET = 'a-sufficiently-long-secret-key';
 
     const { isProd, isDev, isTest } = await import('../../../src/config/env');
 
@@ -57,9 +57,9 @@ describe('env config', () => {
   });
 
   it('isDev returns true only in development', async () => {
-    process.env.NODE_ENV     = 'development';
+    process.env.NODE_ENV = 'development';
     process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
-    process.env.JWT_SECRET   = 'a-sufficiently-long-secret-key';
+    process.env.JWT_SECRET = 'a-sufficiently-long-secret-key';
 
     const { isProd, isDev, isTest } = await import('../../../src/config/env');
 
@@ -69,9 +69,9 @@ describe('env config', () => {
   });
 
   it('isTest returns true only in test', async () => {
-    process.env.NODE_ENV     = 'test';
+    process.env.NODE_ENV = 'test';
     process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
-    process.env.JWT_SECRET   = 'a-sufficiently-long-secret-key';
+    process.env.JWT_SECRET = 'a-sufficiently-long-secret-key';
 
     const { isProd, isDev, isTest } = await import('../../../src/config/env');
 
@@ -99,7 +99,7 @@ describe('env config', () => {
     });
 
     process.env.DATABASE_URL = 'postgres://localhost:5432/habit_tracker';
-    process.env.JWT_SECRET   = 'short';
+    process.env.JWT_SECRET = 'short';
 
     await expect(import('../../../src/config/env')).rejects.toThrow('process.exit called');
 
