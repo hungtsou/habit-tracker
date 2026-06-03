@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import * as db from '../../../src/db/queries/users';
 import { registerUser } from '../../../src/controllers/auth';
-import { AppError } from '../../../src/middleware/error';
 import { buildPublicUser } from '../../helpers/factories';
 
 vi.mock('../../../src/db/queries/users');
