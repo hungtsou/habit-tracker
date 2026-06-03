@@ -31,33 +31,34 @@ jobs:
           # --model selects the Claude model; claude-sonnet-4-6 is the latest Sonnet alias
           claude_args: '--max-turns 30 --model claude-sonnet-4-6'
           prompt: |
-            You are reviewing a pull request. Follow these steps exactly:
+            You are a code reviewer for pull request #${{ github.event.pull_request.number }}.
+            Take these exact steps before writing anything:
 
-            1. Run `gh pr view $PR_NUMBER --json files,title,body` to list changed files.
-            2. Run `gh pr diff $PR_NUMBER` to read the full diff.
-            3. For each changed source file (skip `node_modules/`, `dist/`, `*.lock`, `package-lock.json`), read the full file with the Read tool so you have complete context — the diff alone can miss surrounding code.
-            4. Write your review as a comment on the PR using `gh pr comment $PR_NUMBER --body "..."`.
+            **Step 1 — get the diff**
+            Run this command and read its output carefully:
+            ```
+            git diff origin/${{ github.base_ref }}...HEAD
+            ```
 
-            **Project standards to enforce:**
-            - Response shape: success → `{ data: T }` via `sendSuccess()`, error → `{ error, statusCode }` via `sendError()` or `AppError`. Using `res.json()` directly is a violation.
-            - Controllers must be thin — business logic belongs in `db/` query functions, not in controllers.
-            - Middleware order on routes: `authenticate → validate(schema) → controller`. Any protected route missing `authenticate` is an auth bypass.
-            - Zod schemas in `src/schemas/` with user-friendly error messages and `.transform()` for sanitization.
-            - Parameterized queries only (`$1, $2` placeholders) — string interpolation of any variable into a SQL query is a SQL injection vulnerability, even inside a template literal.
-            - Named exports only (no default exports except router files and `app`/`server`).
-            - No `any` type — use `unknown` and narrow with type guards.
-            - DB columns `snake_case`, TypeScript variables `camelCase`.
-            - All PKs must be UUIDs.
-            - HTTP status codes: `201 Created` for POST that creates a resource, `204 No Content` for DELETE, `200` for everything else.
+            **Step 2 — list changed files**
+            Run:
+            ```
+            git diff origin/${{ github.base_ref }}...HEAD --name-only
+            ```
 
-            **Review these areas in order of priority:**
+            **Step 3 — read each changed source file in full**
+            For every `.ts` file in the list (skip `node_modules/`, `dist/`, `*.lock`, `package-lock.json`),
+            use the Read tool to read the complete file — the diff alone can miss surrounding context.
 
-            1. **Security** — SQL injection (look for template literals or string concatenation in any `pool.query()` call), auth bypass (routes missing `authenticate`), secrets in code, OWASP Top 10.
-            2. **Project standard violations** — anything that breaks the conventions above, especially `res.json()` instead of `sendSuccess()`, wrong HTTP status codes on create/delete endpoints.
-            3. **Logic bugs** — incorrect behavior, missing edge cases, wrong status codes.
-            4. **Test coverage** — are all exported functions from changed controllers covered? Are error paths and edge cases tested, or only the happy path?
+            **Step 4 — review against these standards:**
+            - Response shape: success MUST use `sendSuccess(res, data, statusCode)` — `res.json()` directly is a violation.
+            - Middleware order: `authenticate → validate(schema) → controller`. Any route missing `authenticate` that handles user data is an auth bypass.
+            - SQL queries: MUST use `$1, $2` placeholders — any template literal or string concatenation inside `pool.query(...)` is a SQL injection vulnerability.
+            - HTTP status: POST that creates a resource MUST return `201`, DELETE MUST return `204`.
+            - No `any` type — use `unknown` with type guards.
+            - Test files must cover all exported controller functions, not just the happy path of one.
 
-            **Format your review comment exactly like this:**
+            **Step 5 — write your findings in this exact format:**
 
             ## 🔴 Critical
             _Issues that must be fixed before merge (security holes, data loss risk)_
@@ -71,5 +72,5 @@ jobs:
             ## 🟢 Low
             _Minor style or nitpicks_
 
-            For each issue include: **file path + line number**, **what the problem is**, and **a concrete fix suggestion**.
-            If a section has no findings, write `_None_` under it.
+            For each issue: **`path/to/file.ts` line N** — what the problem is — concrete fix.
+            If a section has no findings write `_None_`.
