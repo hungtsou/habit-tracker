@@ -1,118 +1,42 @@
-name: Claude PR Review (Inline)
+name: Claude Code Review
 
-on: [] # disabled for now
-  # pull_request:
-  #   types: [opened, synchronize, reopened]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
-  review:
+  claude-review:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # needed to post review comments
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history so git diff can reach the base branch
+          fetch-depth: 0 # full history for accurate diffs
 
       - name: Generate PR diff
-        id: diff
         run: |
           git diff origin/${{ github.base_ref }}..HEAD \
-            -- '*.ts' '*.js' \
-            ':!dist/**' \
-            ':!*.generated.ts' \
-            > pr_diff.txt
-          [ -s pr_diff.txt ] && echo "empty=false" >> $GITHUB_OUTPUT \
-                              || echo "empty=true"  >> $GITHUB_OUTPUT
+            -- '*.ts' '*.js' '*.py' '*.go' > pr_diff.txt
 
       - name: Install Claude CLI
-        if: steps.diff.outputs.empty == 'false'
         run: npm install -g @anthropic-ai/claude-code
 
       - name: Run Claude Review
-        if: steps.diff.outputs.empty == 'false'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for gh cli
         run: |
-          RAW=$(cat pr_diff.txt | claude -p \
-            'Return ONLY a valid JSON array — no markdown fences, no explanation.
-            Each element must be exactly: {"file": string, "line": number, "severity": "CRITICAL"|"HIGH"|"MEDIUM"|"LOW", "body": string}
-
-            Project standards to enforce:
-            - Response shape: sendSuccess() for success, sendError()/AppError for errors
-            - Controllers must be thin — business logic belongs in db/ query functions
-            - Middleware order on routes: authenticate → validate(schema) → controller
-            - Parameterized queries only ($1, $2) — never interpolate user input into SQL
-            - Named exports only (no default exports except router files and app/server)
-            - No "any" type — use unknown and narrow with type guards
-            - DB columns snake_case, TypeScript variables camelCase
-
-            Review in priority order:
-            1. Security — SQL injection, auth bypass, missing auth on protected routes, OWASP Top 10
-            2. Standard violations — anything breaking the conventions above
-            3. Logic bugs — wrong status codes, missing edge cases, incorrect behavior
-            4. Test coverage — missing unit/integration tests for changed logic
-
-            Line numbers must reference the RIGHT side of the diff (the new file version).
-            Only report real issues. Return [] if none found.' \
+          # Pipe the diff directly to Claude — no extra scripts needed
+          REVIEW=$(cat pr_diff.txt | claude -p \
+            "Senior engineer code review. review code standards from @Claude.md file and project conventions, Flag [HIGH]/[MED]/[LOW] issues.
+             Focus: security, performance, logic errors, maintainability.
+             Include file name and line number for each finding." \
             --output-format json)
 
-          # Parse findings — strip markdown fences Claude may add despite instructions
-          FINDINGS=$(echo "$RAW" | jq -r '.result' \
-            | sed 's/^```json//' | sed 's/^```//' | sed 's/```$//' \
-            | jq 'if type == "array" then . else [] end' 2>/dev/null \
-            || echo '[]')
-
-          COUNT=$(echo "$FINDINGS" | jq 'length')
-
-          if [ "$COUNT" -eq 0 ]; then
-            gh pr comment ${{ github.event.number }} \
-              --body "## Claude PR Review
-
-          ✅ No issues found in the changed files."
-            exit 0
-          fi
-
-          C=$(echo "$FINDINGS" | jq '[.[] | select(.severity=="CRITICAL")] | length')
-          H=$(echo "$FINDINGS" | jq '[.[] | select(.severity=="HIGH")]   | length')
-          M=$(echo "$FINDINGS" | jq '[.[] | select(.severity=="MEDIUM")]  | length')
-          L=$(echo "$FINDINGS" | jq '[.[] | select(.severity=="LOW")]     | length')
-
-          SUMMARY="## Claude PR Review
-
-          🔴 Critical: $C  🟠 High: $H  🟡 Medium: $M  🟢 Low: $L"
-
-          # Build GitHub review comments — each anchored to a specific diff line
-          COMMENTS=$(echo "$FINDINGS" | jq '[.[] | {
-            path: .file,
-            line: .line,
-            side: "RIGHT",
-            body: ("[**\(.severity)**] \(.body)")
-          }]')
-
-          # Write payload to file to avoid shell-escaping issues with nested JSON
-          jq -n \
-            --arg     body     "$SUMMARY" \
-            --argjson comments "$COMMENTS" \
-            '{body: $body, event: "COMMENT", comments: $comments}' \
-            > review_payload.json
-
-          # Post inline review; fall back to a plain PR comment if any line
-          # position is outside the diff (GitHub rejects the whole request in that case)
-          if ! gh api "repos/${{ github.repository }}/pulls/${{ github.event.number }}/reviews" \
-               --method POST --input review_payload.json 2>/dev/null; then
-
-            PLAIN=$(echo "$FINDINGS" | jq -r \
-              '.[] | "**[\(.severity)]** `\(.file):\(.line)` — \(.body)"')
-
-            gh pr comment ${{ github.event.number }} \
-              --body "$SUMMARY
-
-          ---
-          $PLAIN
-
-          > ⚠️ Inline comments failed (line positions may be outside the diff). Findings listed above."
-          fi
+          # Extract the text result and post as a PR comment
+          gh pr comment ${{ github.event.number }} \
+            --body "## 🤖 Claude Code Review
+          $(echo "$REVIEW" | jq -r '.result')"
