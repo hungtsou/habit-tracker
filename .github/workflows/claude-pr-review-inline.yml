@@ -1,8 +1,8 @@
-name: Claude PR Review (Inline)
+name: Claude PR Review (CLI)
 
-on: [] # disabled for now
-  # pull_request:
-  #   types: [opened, synchronize, reopened]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   review:
@@ -116,3 +116,91 @@ jobs:
 
           > ⚠️ Inline comments failed (line positions may be outside the diff). Findings listed above."
           fi
+
+      - name: Extract changed symbols for Stage 2
+        id: symbols
+        if: steps.diff.outputs.empty == 'false'
+        run: |
+          python3 - <<'PYEOF'
+          import re, json, os
+
+          current_file = None
+          entries = {}
+
+          EXPORT_RE = re.compile(
+              r'^[+-]\s*export\s+(?:async\s+)?'
+              r'(?:function|const|class|interface|type|enum)\s+'
+              r'([A-Za-z_$][A-Za-z0-9_$]*)'
+          )
+
+          with open('pr_diff.txt') as f:
+              for line in f:
+                  line = line.rstrip('\n')
+                  if line.startswith('+++ b/'):
+                      current_file = line[6:]
+                      continue
+                  if current_file is None or '.test.' in current_file or '.spec.' in current_file:
+                      continue
+                  m = EXPORT_RE.match(line)
+                  if m:
+                      symbol = m.group(1)
+                      key = (current_file, symbol)
+                      entries[key] = {"file": current_file, "symbol": symbol,
+                                      "change": "added" if line[0] == '+' else "removed"}
+
+          result = list(entries.values())
+          with open('changed_symbols.json', 'w') as out:
+              json.dump(result, out)
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as gh:
+              gh.write(f"symbols_empty={'true' if not result else 'false'}\n")
+          PYEOF
+
+      - name: Run Claude Cross-File Review (Stage 2)
+        if: steps.diff.outputs.empty == 'false' && steps.symbols.outputs.symbols_empty == 'false'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SYMBOLS=$(cat changed_symbols.json)
+
+          RAW2=$(printf 'CHANGED_SYMBOLS_JSON:\n%s' "$SYMBOLS" \
+            | claude -p "$(cat .claude/agents/cross-file-reviewer.md)" \
+            --allowedTools "Agent,Bash,Read" \
+            --dangerously-skip-permissions \
+            --max-turns 40 \
+            --output-format json 2>/dev/null) || RAW2=''
+
+          # Parse findings — strip markdown fences Claude may add despite instructions
+          FINDINGS2=$(printf '%s' "$RAW2" | jq -r '.result // empty' \
+            | sed 's/^```json//' | sed 's/^```//' | sed 's/```$//' \
+            | jq 'if type == "array" then . else [] end' 2>/dev/null \
+            || echo '[]')
+
+          COUNT2=$(printf '%s' "$FINDINGS2" | jq 'length')
+
+          if [ "$COUNT2" -eq 0 ]; then
+            gh pr comment ${{ github.event.number }} \
+              --body "## Claude Cross-File Review (Stage 2)
+
+          ✅ No cross-file consistency issues found."
+            exit 0
+          fi
+
+          C2=$(printf '%s' "$FINDINGS2" | jq '[.[] | select(.severity=="CRITICAL")] | length')
+          H2=$(printf '%s' "$FINDINGS2" | jq '[.[] | select(.severity=="HIGH")]   | length')
+          M2=$(printf '%s' "$FINDINGS2" | jq '[.[] | select(.severity=="MEDIUM")]  | length')
+          L2=$(printf '%s' "$FINDINGS2" | jq '[.[] | select(.severity=="LOW")]     | length')
+
+          PLAIN2=$(printf '%s' "$FINDINGS2" | jq -r \
+            '.[] | "**[\(.severity)]** `\(.file)` — \(.issue)"')
+
+          gh pr comment ${{ github.event.number }} \
+            --body "## Claude Cross-File Review (Stage 2)
+
+          🔴 Critical: $C2  🟠 High: $H2  🟡 Medium: $M2  🟢 Low: $L2
+
+          ---
+          $PLAIN2
+
+          > ⚠️ These findings reference files outside the diff and cannot be posted as inline comments."
