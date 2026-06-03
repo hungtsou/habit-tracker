@@ -1,15 +1,13 @@
 import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import { createHabitSchema } from '../schemas/habits';
+import * as controller from '../controllers/habits';
 
 const router = Router();
 
-// Routes populated in: feat(habits) and feat(tracking) tasks
-// GET    /api/habits/defaults
-// POST   /api/habits/defaults/:id/adopt
-// POST   /api/habits
-// GET    /api/habits
-// DELETE /api/habits/:id
-// POST   /api/habits/:id/complete
-// DELETE /api/habits/:id/complete
-// GET    /api/habits/today
+router.get('/', authenticate, controller.getHabits);
+router.post('/', authenticate, validate(createHabitSchema), controller.createHabit);
+router.delete('/:id', controller.deleteHabit);
 
 export default router;
