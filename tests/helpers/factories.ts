@@ -1,13 +1,9 @@
-// Placeholder for test data factories.
-// Populate with builder functions as features are implemented.
-// Example pattern:
-//
-// export const buildUser = (overrides = {}) => ({
-//   id: randomUUID(),
-//   email: 'test@example.com',
-//   password: 'hashed',
-//   created_at: new Date(),
-//   ...overrides,
-// });
+import { randomUUID } from 'crypto';
+import type { PublicUser } from '../../src/db/types';
 
-export {};
+export const buildPublicUser = (overrides: Partial<PublicUser> = {}): PublicUser => ({
+  id: randomUUID(),
+  email: 'test@example.com',
+  created_at: new Date(),
+  ...overrides,
+});
