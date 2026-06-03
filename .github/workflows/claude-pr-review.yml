@@ -4,10 +4,14 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# Minimum permissions required by claude-code-action:
+#   contents: read       — checkout the repo
+#   pull-requests: write — post PR review comments
+#   issues: write        — required by the action's comment API calls
 permissions:
   contents: read
   pull-requests: write
-  id-token: write
+  issues: write
 
 jobs:
   review:
@@ -15,11 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Full history is needed so Claude can see the complete diff context
           fetch-depth: 0
 
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # --max-turns limits how many back-and-forth steps Claude takes (controls cost)
+          # --model selects the Claude model; claude-sonnet-4-6 is the latest Sonnet alias
           claude_args: '--max-turns 10 --model claude-sonnet-4-6'
           prompt: |
             Review the changed files in this pull request.
