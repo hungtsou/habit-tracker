@@ -1,9 +1,10 @@
 import { Router } from 'express';
+import { validate } from '../middleware/validate';
+import { registerUser } from '../controllers/auth';
+import { registerSchema } from '../schemas/users';
 
 const router = Router();
 
-// Routes populated in: feat(auth) tasks
-// POST /api/auth/register
-// POST /api/auth/login
+router.post('/register', validate(registerSchema), registerUser);
 
 export default router;
