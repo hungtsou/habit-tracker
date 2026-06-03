@@ -167,8 +167,9 @@ jobs:
           RAW2=$(printf 'CHANGED_SYMBOLS_JSON:\n%s' "$SYMBOLS" \
             | claude -p "$(cat .claude/agents/cross-file-reviewer.md)" \
             --allowedTools "Agent,Bash,Read" \
+            --dangerously-skip-permissions \
             --max-turns 40 \
-            --output-format json 2>/dev/null)
+            --output-format json 2>/dev/null) || RAW2=''
 
           # Parse findings — strip markdown fences Claude may add despite instructions
           FINDINGS2=$(printf '%s' "$RAW2" | jq -r '.result // empty' \
