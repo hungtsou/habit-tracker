@@ -4,7 +4,7 @@ import { sendSuccess } from '../utils/response';
 import { AuthRequest } from '../types/express.d';
 import * as db from '../db/queries/habits';
 
-export const getHabits = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const listHabits = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { search } = req.query as { search?: string };
     const habits = await db.findHabitsByUser(req.user!.userId, search);
