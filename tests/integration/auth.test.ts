@@ -60,3 +60,62 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('POST /api/auth/login', () => {
+  const validBody = { email: 'user@example.com', password: 'password123' };
+
+  beforeEach(async () => {
+    await request(app).post('/api/auth/register').send(validBody);
+  });
+
+  it('should return 200 with a JWT token on valid credentials', async () => {
+    const res = await request(app).post('/api/auth/login').send(validBody);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty('token');
+    expect(typeof res.body.data.token).toBe('string');
+  });
+
+  it('should lowercase and trim the email before lookup', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: '  USER@Example.COM  ', password: 'password123' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty('token');
+  });
+
+  it('should return 401 when email is not registered', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'unknown@example.com', password: 'password123' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Invalid email or password');
+  });
+
+  it('should return 401 when password is incorrect', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'user@example.com', password: 'wrongpassword' });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Invalid email or password');
+  });
+
+  it('should return 400 when password is missing', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'user@example.com' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('should return 400 when email is invalid format', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'not-an-email', password: 'password123' });
+
+    expect(res.status).toBe(400);
+  });
+});
